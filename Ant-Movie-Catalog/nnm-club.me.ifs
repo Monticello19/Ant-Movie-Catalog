@@ -1,0 +1,297 @@
+(***************************************************
+
+Ant Movie Catalog importation script
+www.antp.be/software/moviecatalog/
+
+[Infos]
+Authors=2San (drovosekov.net)
+Title=nnm-club.me
+Description=Позволяет скачивать описания фильмов с nnm-club.me
+Site=nnm-club.me
+Language=RU
+Version=1.1
+Requires=3.5.0
+Comments=
+License=This program is free software; you can redistribute it and/or modify it under the  terms of the GNU General Public License as published by the Free Software Foundation;  either version 2 of the License, or (at your option) any later version. |
+GetInfo=1
+RequiresMovies=1
+
+[Options]
+
+[Parameters]
+
+***************************************************)
+
+program datacd;
+const
+  BaseAddress = 'http://nnm-club.me/';
+  content = 'application/x-www-form-urlencoded';
+var
+  MovieName: string;
+  URL : string;
+  SearchParams : string;
+
+function FindLine(Pattern: string; List: TStringList; StartAt: Integer): Integer;
+var
+  i: Integer;
+begin
+  result := -1;
+  if StartAt < 0 then
+    StartAt := 0;
+  for i := StartAt to List.Count-1 do
+    if Pos(Pattern, List.GetString(i)) <> 0 then
+    begin
+      result := i;
+      Break;
+    end;
+end;
+
+procedure AnalyzePage(Address: string; Params: string);
+var
+  ID, FilmName, Line, HTMLText: String;
+  Page: TStringList;
+  FilmPage: TStringList;
+  BeginLinePos, BeginPos, EndPos: Integer;
+  forceHTTP11: boolean;
+  forceEncodeParams: boolean;
+
+begin
+  Page := TStringList.Create;
+
+  forceHTTP11 := true;
+  forceEncodeParams := true;
+  SearchParams := '?q=' + UrlEncode(MovieName);
+  Page.Text := GetPage(URL + SearchParams);
+
+  HTMLText := Page.Text;
+//  Page.SaveToFile('C:\обмен\page.html'); //!Отладка
+
+  BeginLinePos := Pos('Ничего не найдено', HTMLText);
+
+  if BeginLinePos=0 then
+    begin
+      PickTreeClear; //Очистка дерева фильмов
+      PickTreeAdd('Поиск по слову: ' + MovieName, '');
+
+      //Вывод фильмов в дерево
+      AddMoviesTitles(Page);
+      If PickTreeExec(Address) Then
+      begin
+        AnalyzeMoviePage(Address);
+      end;
+  end else
+  begin
+      ShowMessage('Поиск не дал результатов');
+  end;
+  
+  Page.Free;
+
+
+end;
+
+//==============================================================================
+  procedure AddMoviesTitles(Page: TStringList);
+  var
+    i, y: integer;
+    Line: string;
+    MovieTitle, MovieAddress: string;
+    StartPos, EndPos: Integer;
+  begin
+    for  i:=0  to Page.Count-1 do
+    begin
+      Line := Page.GetString(i);
+      if Pos('<a class="pgenmed" href="', Line) > 0 then
+      begin
+        StartPos := Pos('<a class="pgenmed" href="', Line)+Length('<a class="pgenmed" href="');
+        Line := Copy(Line, StartPos, Length(Line));
+        EndPos := Pos('" title="', Line)-1;
+        MovieAddress := BaseAddress + 'forum/' +Copy(Line, 0, EndPos);
+
+        StartPos := Pos('" title="', Line)+Length('" title="');
+        EndPos := Pos('">', Line);
+        MovieTitle := Copy(Line, StartPos, EndPos-StartPos);
+        
+        HTMLRemoveTags(MovieTitle);
+        HTMLDecode(MovieTitle);
+        PickTreeAdd(MovieTitle, MovieAddress);
+      end;
+    end;
+  end;
+
+//==============================================================================
+
+procedure AnalyzeMoviePage(Address: String);
+var
+  Page: TStringList;
+  LineNr : Integer;
+  Line, Value, HTMLText : String;
+  BeginPos, EndPos : Integer;
+
+begin
+  Page := TStringList.Create;
+  Page.Text := GetPage(Address);
+  //Page.SaveToFile('c:\page.html'); //!Отладка
+
+     HTMLText := Page.Text;
+     
+  // URL
+  SetField(fieldURL,Address);  // Запоминаем URL страницы фильма
+
+  // Переведёное название
+  LineNr := FindLine('Русское название', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Русское название:',HTMLText)+Length('Русское название:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, 1, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldTranslatedTitle,Value);
+  end;
+
+  // Оригинальное название
+  LineNr := FindLine('Оригинальное название:', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Оригинальное название:',HTMLText)+Length('Оригинальное название:');
+    Delete(Line,1,BeginPos); //Стереть начало строки
+    BeginPos := 1;
+    EndPos := Pos('</div>',Line)-1;
+    Value := Copy(Line, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldOriginalTitle, Value);
+  end;
+
+  // Год выхода
+  LineNr := FindLine('Год выпуска:', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Год выпуска:',HTMLText)+Length('Год выпуска:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    SetField(fieldYear, Value);
+  end;
+
+ // Режиссёр:
+  LineNr := FindLine('Режиссер:', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Режиссер:',HTMLText)+Length('Режиссер:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldDirector, Value);
+  end;
+
+  // Жанр
+  LineNr := FindLine('Жанр', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Жанр:',HTMLText)+Length('Жанр:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldCategory, Value);
+  end;
+
+  // Страна:
+  LineNr := FindLine('Производство:', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Производство:',HTMLText)+Length('Производство:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldCountry, Value);
+  end;
+
+  // Страна:
+  LineNr := FindLine('Страна:', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Страна:',HTMLText)+Length('Страна:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldCountry, Value);
+  end;
+  
+  // В главных ролях
+  LineNr := FindLine('Актеры:', Page, 0);
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Актеры:',HTMLText)+Length('Актеры:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<br />',Value)-1;
+    Value := Copy(Value, BeginPos, EndPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldActors, Value);
+  end;
+
+  // Краткое содержание
+  LineNr := FindLine('Описание фильма:', Page, 0); //Начало строки описания
+  if LineNr > -1 then
+  begin
+    BeginPos := Pos('Описание фильма:', HTMLText)+Length('Описание фильма:');
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := 1;
+    EndPos := Pos('<span style="font-weight', Value);
+    Value := Copy(Value, BeginPos, EndPos - BeginPos);
+    HTMLDecode(Value);
+    HTMLRemoveTags(Value);
+    Value := Trim(Value);
+    SetField(fieldDescription,Value);
+  end;
+
+  // Картинка
+  if Pos('<var class="postImg', HTMLText) > 0 then
+  begin
+    BeginPos := Pos('<var class="postImg', HTMLText);
+    Value := Copy(HTMLText, BeginPos, Length(HTMLText));
+    BeginPos := Pos('title="', Value)+Length('title="');
+    EndPos := Pos('">', Value);
+    Value := Copy(Value, BeginPos, EndPos - BeginPos);
+    //Address := BaseAddress+Value;
+    //If Value <> 'foto/logo.gif' Then
+    //begin
+      GetPicture(Value);
+    //end;
+  end;
+//DisplayResults;
+end;
+
+begin
+    URL := BaseAddress;
+    MovieName := GetField(fieldOriginalTitle);
+    if MovieName = '' then
+      MovieName := GetField(fieldTranslatedTitle);
+    if Input('Import from nnm-club.me', 'Enter the title of the movie:', MovieName) then
+      AnalyzePage(URL, MovieName);
+end.
