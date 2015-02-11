@@ -1,0 +1,339 @@
+(***************************************************
+
+Ant Movie Catalog importation script
+www.antp.be/software/moviecatalog/
+
+[Infos]
+Authors=
+Title=KinoFilms.TV (RU).ifs
+Description=
+Site=
+Language=?
+Version=
+Requires=3.4.0
+Comments=
+License=
+GetInfo=1
+RequiresMovies=1
+
+[Options]
+
+[Parameters]
+
+***************************************************)
+
+// GETINFO SCRIPTING
+// Imports russian movies info from KinoExpert
+
+(***************************************************
+ *  Movie information import script for:           *
+ *    KinoExpert Russian,                          *
+ *    http://www.kinofilms.tv/                    *
+ *                                                 *
+ *  (c) 2004 Serguei Tarassov                      *
+ *  http://www.arbinada.com                        *
+ *                                                 *
+ *  Last update:                                   *
+ *  - 24.10.2004                                   *
+ *                                                 *
+ *  Known issues:                                  *
+ *  - none                                         *
+ *                                                 *
+ *  For use with Ant Movie Catalog 3.4.0           *
+ *  www.antp.be/software/moviecatalog              *
+ *                                                 *
+ *  This program is free software; you can         *
+ *  redistribute it and/or modify it under the     *
+ *  terms of the GNU General Public License as     *
+ *  published by the Free Software Foundation;     *
+ *  either version 2 of the License, or (at your   *
+ *  option) any later version.                     *
+ ***************************************************)
+
+program KinoExpert;
+const
+  DEBUG_MODE = false;
+  DEBUG_FOUND_FILMS_FILENAME = 'c:\KinoExpert_found_results.htm';
+  DEBUG_FILM_FILENAME        = 'c:\KinoExpert_film.htm';
+  BaseAddress = 'http://www.kinofilms.tv/';
+
+var
+  MovieName: string;
+
+{ Some utils functions }
+procedure DebugOutput(Value: string);
+begin
+  if DEBUG_MODE then
+    Input('Watch', 'Value', Value);
+end;
+
+procedure DebugOutputFile(FileName: string; FileText: string);
+var
+  Log: TStringList;
+begin
+  if DEBUG_MODE then begin
+    Log := TStringList.Create;
+    Log.Text := FileText;
+    Log.SaveToFile(FileName);
+    Log.Free;
+  end;
+end;
+
+procedure ClearString(var Value: string);
+begin
+  HTMLRemoveTags(Value);
+  HTMLDecode(Value);
+  Value := StringReplace(Value, #13, '');
+  Value := StringReplace(Value, #10, '');
+  Value := trim(Value);
+end;
+
+procedure ClearText(var Value: string);
+var
+  s: string;
+begin
+  if length(Value) < 2 then exit;
+  Value := trim(Value);
+  s := copy(Value, 2, length(Value));
+  s := StringReplace(s, '<br>', #13#10);
+  s := StringReplace(s, '<BR>', #13#10);
+  s := StringReplace(s, '<p>', #13#10#13#10);
+  s := StringReplace(s, '<p>', #13#10#13#10);
+  Value := copy(Value, 1, 1) + s;
+  HTMLRemoveTags(Value);
+  HTMLDecode(Value);
+  Value := trim(Value);
+end;
+
+procedure RemoveLastDot(var Value: string);
+begin
+  if length(Value) > 1 then
+    if copy(Value, length(Value), 1) = '.' then begin
+      Value := copy(Value, 1, length(Value) - 1);
+    end;
+end;
+
+
+
+{ Pages parsing }
+
+const
+  FoundLabel = 'Результаты поиска';
+  FoundMovieTitleRef = 'http://kinofilms.tv/film/';
+
+procedure AnalyzeFoundFilmsPage(URL: string);
+var
+  Page: TStringList;
+	FoundTable: string;
+	pos1, pos2: integer;
+begin
+  Page := TStringList.Create;
+  Page.Text := GetPage(URL);
+  DebugOutputFile(DEBUG_FOUND_FILMS_FILENAME, Page.Text);
+  
+  pos1 := pos(FoundLabel, Page.Text);
+  if pos1 <> 0 then begin
+    FoundTable := copy(Page.Text, Pos1, length(Page.Text));
+    FoundTable := copy(FoundTable, pos('<!-- post -->', FoundTable), length(FoundTable));
+    FoundTable := copy(FoundTable, 1, pos('<!-- /post --></table>', FoundTable) + 7);
+    //DebugOutput(FoundTable);
+    if pos(FoundMovieTitleRef, FoundTable) > 0 then
+      AddFoundMoviesTitles(FoundTable);
+  end;
+  Page.Free;
+end;
+
+
+procedure AddFoundMoviesTitles(Table: string);
+var
+	CurName, CurURL, SelectedURL, s: string;
+	pos2, len: integer;
+begin
+  PickTreeClear;
+ 	PickTreeAdd('Найденные фильмы', '');
+  len := length(Table);
+  while pos(FoundMovieTitleRef, Table) > 0 do begin
+    Table := copy(Table, pos(FoundMovieTitleRef, Table), len);
+    pos2 := pos('"', Table);
+    CurURL := copy(Table, 1, pos2 - 1);
+    //DebugOutput(CurURL);
+    Table := copy(Table, pos('>', Table) + 1, len);
+    pos2 := pos('<', Table);
+    CurName := copy(Table, 1, pos2 - 1);
+    ClearString(CurName);
+    Table := copy(Table, pos2 + 1, len);
+    //DebugOutput(CurName);
+    PickTreeAdd(CurName, CurURL);
+  end;
+  
+	if PickTreeExec(SelectedURL) then
+    AnalyzeFilmPage(SelectedURL);
+end;
+
+
+const
+  FilmTitleAnchor1 = '<span itemprop="name">';
+  FilmTitleAnchor2 = '<span itemprop="alternativeHeadline">';
+  FilmCountryAnchor = 'Производство:</strong>';
+  FilmLengthAnchor = 'Длительность:</strong>';
+  FilmActorsAnchor = 'Актёр:</strong>';
+  FilmDirectorAnchor = 'Режиссер:</strong>';
+  FilmProducerAnchor = 'Продюсер:</strong>';
+  FilmAwardsAnchor = 'Награды и примечания';
+  FilmContentAnchor = 'Описание:</strong></p>';
+  FilmImageRefAnchor = 'http://kinofilms.tv/images/films/';
+
+procedure AnalyzeFilmPage(SelectedURL: string);
+var
+  Page: TStringList;
+	Content, Value, ImageURL: string;
+	pos1, pos2, len: integer;
+begin
+  Page := TStringList.Create;
+  Page.Text := GetPage(SelectedURL);
+  DebugOutputFile(DEBUG_FILM_FILENAME, Page.Text);
+  
+  SetField(fieldURL, SelectedURL)
+
+  len := length(Page.Text);
+  Content := Page.Text;
+  
+  // Film title
+  pos1 := pos(FilmTitleAnchor1, Content);
+  Value := copy(Content, pos1, len);
+  Value := copy(Value, pos('>', Value) + 1, len);
+  pos2 := pos('</span>', Value);
+  Value := copy(Value, 1, pos2 - 1);
+  ClearString(Value);
+  SetField(fieldTranslatedTitle, Value)
+  //DebugOutput(Value);
+
+  pos1 := pos(FilmTitleAnchor2, Content);
+  Value := copy(Content, pos1, len);
+  Value := copy(Value, pos('>', Value) + 1, len);
+  pos2 := pos('</span>', Value);
+  Value := copy(Value, 1, pos2 - 1);
+  ClearString(Value);
+  SetField(fieldOriginalTitle, Value)
+  //DebugOutput(Value);
+
+
+  // Country
+  pos2 := pos(FilmCountryAnchor, Content);
+  if pos2 > 0 then begin
+    Value := copy(Content, pos2+Length(FilmCountryAnchor), len);
+    pos2 := pos('<strong>', Value);
+    Value := copy(Value, 1, pos2 - 1);
+    ClearString(Value);
+    SetField(fieldCountry, Value);
+  end;
+
+  //DebugOutput(Content);
+  // Length
+  pos2 := pos(FilmLengthAnchor, Content)+Length(FilmLengthAnchor);
+  Value := copy(Content, pos2, len);
+  pos2 := pos('мин.</p>', Value);
+  Value := copy(Value, 1, pos2 - 1);
+  ClearString(Value);
+  SetField(fieldLength, Value);
+  // Category
+  pos2 := pos('Рубрики:</strong>', Content)+Length('Рубрики:</strong>');
+  Value := copy(Content, pos2, len);
+  pos2 := pos('<strong>', Value);
+  Value := copy(Value, 1, pos2 - 1);
+  ClearString(Value);
+  SetField(fieldCategory, Value);
+  // Year
+  pos2 := pos('Год:</strong>', Content)+Length('Год:</strong>');
+  Value := copy(Content, pos2, len);
+  pos2 := pos('<strong>', Value);
+  Value := copy(Value, 1, pos2 - 1);
+  ClearString(Value);
+  SetField(fieldYear, Value);
+  
+  
+  //
+  // Other attributes
+  //
+  // Actors
+  pos2 := pos(FilmActorsAnchor, Content);
+  if pos2 > 0 then begin
+    Value := copy(Content, pos2+Length(FilmActorsAnchor), len);
+    pos2 := pos('<strong>', Value);
+    Value := copy(Value, 1, pos2 - 1);
+    ClearText(Value);
+    SetField(fieldActors, Value);
+  end;
+
+  // Director
+  pos2 := pos(FilmDirectorAnchor, Content);
+  if pos2 > 0 then begin
+    Value := copy(Content, pos2+Length(FilmDirectorAnchor), len);
+    pos2 := pos('<strong>', Value);
+    Value := copy(Value, 1, pos2 - 1);
+    ClearString(Value);
+    SetField(fieldDirector, Value);
+  end;
+  
+  // Producer
+  pos2 := pos(FilmProducerAnchor, Content);
+  if pos2 > 0 then begin
+    Value := copy(Content, pos2+Length(FilmProducerAnchor), len);
+    pos2 := pos('<strong>', Value);
+    Value := copy(Value, 1, pos2 - 1);
+    ClearString(Value);
+    SetField(fieldProducer, Value);
+  end;
+  
+  // Awards
+  pos2 := pos(FilmAwardsAnchor, Content);
+  if pos2 > 0 then begin
+    Content := copy(Content, pos2, len);
+    Content := copy(Content, pos('>', Content) + 1, len);
+    pos2 := pos('</div', Content);
+    Value := copy(Content, 1, pos2 - 1);
+    ClearText(Value);
+    SetField(fieldComments, Value);
+  end;
+
+  // Content
+  pos2 := pos(FilmContentAnchor, Content);
+  if pos2 > 0 then begin
+    Value := copy(Content, pos2+Length(FilmContentAnchor), len);
+    pos2 := pos('</p>', Value);
+    Value := copy(Value, 1, pos2 - 1);
+    ClearText(Value);
+    SetField(fieldDescription, Value);
+  end;
+  
+  // image
+  pos2 := pos(FilmImageRefAnchor, Content);
+  if pos2 > 0 then begin
+    Content := copy(Content, pos2, len);
+    ImageURL := copy(Content, 1, pos('"', Content)-1);
+      GetPicture(ImageURL); // False = do not store picture externally
+  end;
+
+
+  Page.Free;
+  
+  //DisplayResults;
+end;
+
+begin
+  if CheckVersion(3,4,0) then
+  begin
+    MovieName := GetField(fieldOriginalTitle);
+    if MovieName = '' then
+      MovieName := GetField(fieldTranslatedTitle);
+     MovieName:= (StringReplace(MovieName, '.', ' '));
+    if Input('Import from kinofilms.tv',
+             'Enter the title of the movie:', MovieName) then
+    begin
+      AnalyzeFoundFilmsPage(BaseAddress + 'search/?search=' +
+                  (StringReplace(MovieName, ' ', '+')) + '&phrase=0');
+//      AnalyzePage('http://localhost/search1.htm');
+    end;
+  end else
+    ShowMessage('This script requires a newer version of Ant Movie Catalog (at least the version 3.4.0)');
+end.
