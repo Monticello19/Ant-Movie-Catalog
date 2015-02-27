@@ -6,7 +6,7 @@ www.antp.be/software/moviecatalog/
 [Infos]
 Authors=2San (drovosekov.net)
 Title=nnm-club.me
-Description=Позволяет скачивать описания фильмов с nnm-club.me
+Description=описания фильмов с nnm-club.me
 Site=nnm-club.me
 Language=RU
 Version=1.1
@@ -61,7 +61,7 @@ begin
   Page.Text := GetPage(URL + SearchParams);
 
   HTMLText := Page.Text;
-//  Page.SaveToFile('C:\обмен\page.html'); //!Отладка
+  //Page.SaveToFile('D:\Downloads\page.html'); //!Отладка
  
   if Pos('Ничего не найдено', HTMLText)=0 then
     begin
