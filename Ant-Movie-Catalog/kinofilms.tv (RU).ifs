@@ -118,7 +118,7 @@ end;
 { Pages parsing }
 
 const
-  FoundLabel = 'Р РµР·СѓР»СЊС‚Р°С‚С‹ РїРѕРёСЃРєР°';
+  FoundLabel = 'Результаты поиска';
   FoundMovieTitleRef = 'http://kinofilms.tv/film/';
 
 procedure AnalyzeFoundFilmsPage(URL: string);
@@ -150,7 +150,7 @@ var
 	pos2, len: integer;
 begin
   PickTreeClear;
- 	PickTreeAdd('РќР°Р№РґРµРЅРЅС‹Рµ С„РёР»СЊРјС‹', '');
+ 	PickTreeAdd('Найденные фильмы', '');
   len := length(Table);
   while pos(FoundMovieTitleRef, Table) > 0 do begin
     Table := copy(Table, pos(FoundMovieTitleRef, Table), len);
@@ -174,13 +174,13 @@ end;
 const
   FilmTitleAnchor1 = '<span itemprop="name">';
   FilmTitleAnchor2 = '<span itemprop="alternativeHeadline">';
-  FilmCountryAnchor = 'РџСЂРѕРёР·РІРѕРґСЃС‚РІРѕ:</strong>';
-  FilmLengthAnchor = 'Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ:</strong>';
-  FilmActorsAnchor = 'РђРєС‚С‘СЂ:</strong>';
-  FilmDirectorAnchor = 'Р РµР¶РёСЃСЃРµСЂ:</strong>';
-  FilmProducerAnchor = 'РџСЂРѕРґСЋСЃРµСЂ:</strong>';
-  FilmAwardsAnchor = 'РќР°РіСЂР°РґС‹ Рё РїСЂРёРјРµС‡Р°РЅРёСЏ';
-  FilmContentAnchor = 'РћРїРёСЃР°РЅРёРµ:</strong></p>';
+  FilmCountryAnchor = 'Производство:</strong>';
+  FilmLengthAnchor = 'Длительность:</strong>';
+  FilmActorsAnchor = 'Актёр:</strong>';
+  FilmDirectorAnchor = 'Режиссер:</strong>';
+  FilmProducerAnchor = 'Продюсер:</strong>';
+  FilmAwardsAnchor = 'Награды и примечания';
+  FilmContentAnchor = 'Описание:</strong></p>';
   FilmImageRefAnchor = 'http://kinofilms.tv/images/films/';
 
 procedure AnalyzeFilmPage(SelectedURL: string);
@@ -232,19 +232,19 @@ begin
   // Length
   pos2 := pos(FilmLengthAnchor, Content)+Length(FilmLengthAnchor);
   Value := copy(Content, pos2, len);
-  pos2 := pos('РјРёРЅ.</p>', Value);
+  pos2 := pos('мин.</p>', Value);
   Value := copy(Value, 1, pos2 - 1);
   ClearString(Value);
   SetField(fieldLength, Value);
   // Category
-  pos2 := pos('Р СѓР±СЂРёРєРё:</strong>', Content)+Length('Р СѓР±СЂРёРєРё:</strong>');
+  pos2 := pos('Рубрики:</strong>', Content)+Length('Рубрики:</strong>');
   Value := copy(Content, pos2, len);
   pos2 := pos('<strong>', Value);
   Value := copy(Value, 1, pos2 - 1);
   ClearString(Value);
   SetField(fieldCategory, Value);
   // Year
-  pos2 := pos('Р“РѕРґ:</strong>', Content)+Length('Р“РѕРґ:</strong>');
+  pos2 := pos('Год:</strong>', Content)+Length('Год:</strong>');
   Value := copy(Content, pos2, len);
   pos2 := pos('<strong>', Value);
   Value := copy(Value, 1, pos2 - 1);

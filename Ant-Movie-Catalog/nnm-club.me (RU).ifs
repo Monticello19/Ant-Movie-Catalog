@@ -6,7 +6,7 @@ www.antp.be/software/moviecatalog/
 [Infos]
 Authors=2San (drovosekov.net)
 Title=nnm-club.me
-Description=РѕРїРёСЃР°РЅРёСЏ С„РёР»СЊРјРѕРІ СЃ nnm-club.me
+Description=Позволяет скачивать описания фильмов с nnm-club.me
 Site=nnm-club.me
 Language=RU
 Version=1.1
@@ -61,14 +61,14 @@ begin
   Page.Text := GetPage(URL + SearchParams);
 
   HTMLText := Page.Text;
-  //Page.SaveToFile('D:\Downloads\page.html'); //!РћС‚Р»Р°РґРєР°
+//  Page.SaveToFile('C:\обмен\page.html'); //!Отладка
  
-  if Pos('РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ', HTMLText)=0 then
+  if Pos('Ничего не найдено', HTMLText)=0 then
     begin
-      PickTreeClear; //РћС‡РёСЃС‚РєР° РґРµСЂРµРІР° С„РёР»СЊРјРѕРІ
-      PickTreeAdd('РџРѕРёСЃРє РїРѕ СЃР»РѕРІСѓ: ' + MovieName, '');
+      PickTreeClear; //Очистка дерева фильмов
+      PickTreeAdd('Поиск по слову: ' + MovieName, '');
 
-      //Р’С‹РІРѕРґ С„РёР»СЊРјРѕРІ РІ РґРµСЂРµРІРѕ
+      //Вывод фильмов в дерево
       AddMoviesTitles();
       If PickTreeExec(Address) Then
       begin
@@ -76,7 +76,7 @@ begin
       end;
   end else
   begin
-      ShowMessage('РџРѕРёСЃРє РЅРµ РґР°Р» СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ');
+      ShowMessage('Поиск не дал результатов');
   end;
   
   Page.Free;
@@ -142,24 +142,24 @@ var
 begin
   Page := TStringList.Create;
   Page.Text := GetPage(Address);
-  //Page.SaveToFile('c:\page.html'); //!РћС‚Р»Р°РґРєР°
+  //Page.SaveToFile('c:\page.html'); //!Отладка
 
      HTMLText := Page.Text;
      
   // URL
-  if CanSetField(fieldURL) then SetField(fieldURL, Address);  // Р—Р°РїРѕРјРёРЅР°РµРј URL СЃС‚СЂР°РЅРёС†С‹ С„РёР»СЊРјР°
+  if CanSetField(fieldURL) then SetField(fieldURL, Address);  // Запоминаем URL страницы фильма
 
-  SetInfoFromPage('Р СѓСЃСЃРєРѕРµ РЅР°Р·РІР°РЅРёРµ:', '<br />', fieldTranslatedTitle);  
-  SetInfoFromPage('РћСЂРёРіРёРЅР°Р»СЊРЅРѕРµ РЅР°Р·РІР°РЅРёРµ:', '<br />', fieldOriginalTitle);  
-  SetInfoFromPage('Р“РѕРґ РІС‹РїСѓСЃРєР°:', '<br />', fieldYear);
-  SetInfoFromPage('Р РµР¶РёСЃСЃРµСЂ:', '<br />', fieldDirector);
-  SetInfoFromPage('Р–Р°РЅСЂ:', '<br />', fieldCategory);
-  SetInfoFromPage('РџСЂРѕРёР·РІРѕРґСЃС‚РІРѕ:', '<br />', fieldCountry);
-  SetInfoFromPage('РЎС‚СЂР°РЅР°:', '<br />', fieldCountry); 
-  SetInfoFromPage('РђРєС‚РµСЂС‹:', '<br />', fieldActors); 
-  SetInfoFromPage('РћРїРёСЃР°РЅРёРµ С„РёР»СЊРјР°:', '<span style="font-weight', fieldDescription); 
+  SetInfoFromPage('Русское название:', '<br />', fieldTranslatedTitle);  
+  SetInfoFromPage('Оригинальное название:', '<br />', fieldOriginalTitle);  
+  SetInfoFromPage('Год выпуска:', '<br />', fieldYear);
+  SetInfoFromPage('Режиссер:', '<br />', fieldDirector);
+  SetInfoFromPage('Жанр:', '<br />', fieldCategory);
+  SetInfoFromPage('Производство:', '<br />', fieldCountry);
+  SetInfoFromPage('Страна:', '<br />', fieldCountry); 
+  SetInfoFromPage('Актеры:', '<br />', fieldActors); 
+  SetInfoFromPage('Описание фильма:', '<span style="font-weight', fieldDescription); 
         
-  // РљР°СЂС‚РёРЅРєР°
+  // Картинка
   if Pos('<var class="postImg', HTMLText) > 0 then
   begin
     BeginPos := Pos('<var class="postImg', HTMLText);

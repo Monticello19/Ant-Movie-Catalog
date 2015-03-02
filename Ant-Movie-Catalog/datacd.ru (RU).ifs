@@ -6,7 +6,7 @@ www.antp.be/software/moviecatalog/
 [Infos]
 Authors=2San (drovosekov.net)
 Title=DataCD.ru
-Description=РѕРїРёСЃР°РЅРёСЏ С„РёР»СЊРјРѕРІ СЃ datacd.ru
+Description=описания фильмов с datacd.ru
 Site=www.datacd.ru
 Language=RU
 Version=1.1
@@ -66,16 +66,16 @@ begin
   Page.Text := PostPage2(URL, SearchParams, content, BaseAddress, forceHTTP11, forceEncodeParams);
 
   HTMLText := Page.Text;
-  //Page.SaveToFile('c:\page.html'); //!РћС‚Р»Р°РґРєР°
+  //Page.SaveToFile('c:\page.html'); //!Отладка
 
-  BeginLinePos := Pos('Р¤РёР»СЊРјС‹ РїРѕ Р·Р°РїСЂРѕСЃСѓ РЅРµ РЅР°Р№РґРµРЅС‹', HTMLText);
+  BeginLinePos := Pos('Фильмы по запросу не найдены', HTMLText);
 
   if BeginLinePos=0 then
     begin
-      PickTreeClear; //РћС‡РёСЃС‚РєР° РґРµСЂРµРІР° С„РёР»СЊРјРѕРІ
-      PickTreeAdd('РџРѕРёСЃРє РїРѕ СЃР»РѕРІСѓ: ' + MovieName, '');
+      PickTreeClear; //Очистка дерева фильмов
+      PickTreeAdd('Поиск по слову: ' + MovieName, '');
 
-      //Р’С‹РІРѕРґ С„РёР»СЊРјРѕРІ РІ РґРµСЂРµРІРѕ
+      //Вывод фильмов в дерево
       AddMoviesTitles(Page);
       If PickTreeExec(Address) Then
       begin
@@ -83,7 +83,7 @@ begin
       end;
   end else
   begin
-      ShowMessage('РџРѕРёСЃРє РЅРµ РґР°Р» СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ');
+      ShowMessage('Поиск не дал результатов');
   end;
   
   Page.Free;
@@ -138,14 +138,14 @@ var
 begin
   Page := TStringList.Create;
   Page.Text := GetPage(Address);
-  //Page.SaveToFile('c:\page.html'); //!РћС‚Р»Р°РґРєР°
+  //Page.SaveToFile('c:\page.html'); //!Отладка
 
   // URL
-  SetField(fieldURL,Address);  // Р—Р°РїРѕРјРёРЅР°РµРј URL СЃС‚СЂР°РЅРёС†С‹ С„РёР»СЊРјР°
+  SetField(fieldURL,Address);  // Запоминаем URL страницы фильма
 
-  // Р РµР№С‚РёРЅРі С„РёР»СЊРјР°
+  // Рейтинг фильма
 
-  LineNr := FindLine('<legend>Р РµР№С‚РёРЅРі С„РёР»СЊРјР°</legend>', Page, 0);
+  LineNr := FindLine('<legend>Рейтинг фильма</legend>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr+1);
@@ -157,52 +157,52 @@ begin
     SetField(fieldRating,Value);
   end;
 
-  // РџРµСЂРµРІРµРґС‘РЅРѕРµ РЅР°Р·РІР°РЅРёРµ
-  LineNr := FindLine('<b>РќР°Р·РІР°РЅРёРµ:</b>', Page, 0);
+  // Переведёное название
+  LineNr := FindLine('<b>Название:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>РќР°Р·РІР°РЅРёРµ:</b>',Line)+16;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Название:</b>',Line)+16;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
     SetField(fieldTranslatedTitle,Value);
   end;
   
-  // РћСЂРёРіРёРЅР°Р»СЊРЅРѕРµ РЅР°Р·РІР°РЅРёРµ
-  LineNr := FindLine('<b>РћСЂРёРіРёРЅР°Р»СЊРЅРѕРµ РЅР°Р·РІР°РЅРёРµ:</b>', Page, 0);
+  // Оригинальное название
+  LineNr := FindLine('<b>Оригинальное название:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>РћСЂРёРіРёРЅР°Р»СЊРЅРѕРµ РЅР°Р·РІР°РЅРёРµ:</b>',Line)+29;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Оригинальное название:</b>',Line)+29;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
     SetField(fieldOriginalTitle, Value);
   end;
 
-  // Р“РѕРґ РІС‹С…РѕРґР°
-  LineNr := FindLine('<b>Р“РѕРґ РІС‹С…РѕРґР°:</b>', Page, 0);
+  // Год выхода
+  LineNr := FindLine('<b>Год выхода:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>Р“РѕРґ РІС‹С…РѕРґР°:</b>',Line)+18;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Год выхода:</b>',Line)+18;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
     SetField(fieldYear, Value);
   end;
 
- // Р РµР¶РёСЃСЃС‘СЂ:
-  LineNr := FindLine('<b>Р РµР¶РёСЃСЃРµСЂ:</b>', Page, 0);
+ // Режиссёр:
+  LineNr := FindLine('<b>Режиссер:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>Р РµР¶РёСЃСЃРµСЂ:</b>',Line)+16;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Режиссер:</b>',Line)+16;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
@@ -211,13 +211,13 @@ begin
     SetField(fieldDirector, Value);
   end;
 
-  // РџСЂРѕРґСЋСЃРµСЂ:
-  LineNr := FindLine('<b>РџСЂРѕРґСЋСЃРµСЂ:</b>', Page, 0);
+  // Продюсер:
+  LineNr := FindLine('<b>Продюсер:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>РџСЂРѕРґСЋСЃРµСЂ:</b>',Line)+16;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Продюсер:</b>',Line)+16;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
@@ -226,60 +226,60 @@ begin
     SetField(fieldProducer, Value);
   end;
 
-  // Р–Р°РЅСЂ
-  LineNr := FindLine('<b>Р–Р°РЅСЂ:</b>', Page, 0);
+  // Жанр
+  LineNr := FindLine('<b>Жанр:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>Р–Р°РЅСЂ:</b>',Line)+12;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Жанр:</b>',Line)+12;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
     SetField(fieldCategory, Value);
   end;
 
-  // РЎС‚СЂР°РЅР°:
-  LineNr := FindLine('<b>РЎС‚СЂР°РЅР°:</b>', Page, 0);
+  // Страна:
+  LineNr := FindLine('<b>Страна:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>РЎС‚СЂР°РЅР°:</b>',Line)+14;
-    Delete(Line,1,BeginPos); //РЎС‚РµСЂРµС‚СЊ РЅР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё
+    BeginPos := Pos('<b>Страна:</b>',Line)+14;
+    Delete(Line,1,BeginPos); //Стереть начало строки
     BeginPos := 1;
     EndPos := Pos('</div>',Line)-1;
     Value := Copy(Line, BeginPos, EndPos);
     SetField(fieldCountry, Value);
   end;
 
-  // Р’ РіР»Р°РІРЅС‹С… СЂРѕР»СЏС…
-  LineNr := FindLine('<b>Р’ РіР»Р°РІРЅС‹С… СЂРѕР»СЏС…:</b>', Page, 0);
+  // В главных ролях
+  LineNr := FindLine('<b>В главных ролях:</b>', Page, 0);
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := pos('<b>Р’ РіР»Р°РІРЅС‹С… СЂРѕР»СЏС…:</b>', Line)+23;
-    EndPos := Pos('<b>Р”СЂСѓРіРёРµ РЅР°Р·РІР°РЅРёСЏ С„РёР»СЊРјР°:</b> ',Line);
+    BeginPos := pos('<b>В главных ролях:</b>', Line)+23;
+    EndPos := Pos('<b>Другие названия фильма:</b> ',Line);
     Value := Copy(Line, BeginPos, EndPos - BeginPos);
     HTMLDecode(Value);
     HTMLRemoveTags(Value);
     SetField(fieldActors, Value);
   end;
 
-  // РљСЂР°С‚РєРѕРµ СЃРѕРґРµСЂР¶Р°РЅРёРµ
-  LineNr := FindLine('<b>РљСЂР°С‚РєРѕРµ РѕРїРёСЃР°РЅРёРµ:</b>', Page, 0); //РќР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё РѕРїРёСЃР°РЅРёСЏ
+  // Краткое содержание
+  LineNr := FindLine('<b>Краткое описание:</b>', Page, 0); //Начало строки описания
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
-    BeginPos := Pos('<b>РљСЂР°С‚РєРѕРµ РѕРїРёСЃР°РЅРёРµ:</b>', Line)+28;
-    EndPos := Pos('<b>Р’ РіР»Р°РІРЅС‹С… СЂРѕР»СЏС…:</b>', Line);
+    BeginPos := Pos('<b>Краткое описание:</b>', Line)+28;
+    EndPos := Pos('<b>В главных ролях:</b>', Line);
     Value := Copy(Line, BeginPos, EndPos - BeginPos);
     HTMLDecode(Value);
     HTMLRemoveTags(Value);
     SetField(fieldDescription,Value);
   end;
 
-  // РљР°СЂС‚РёРЅРєР°
-  LineNr := FindLine('<div class="image_pr">', Page, 0); //РќР°С‡Р°Р»Рѕ СЃС‚СЂРѕРєРё СЃ СЂРёСЃСѓРЅРєРѕРј
+  // Картинка
+  LineNr := FindLine('<div class="image_pr">', Page, 0); //Начало строки с рисунком
   if LineNr > -1 then
   begin
     Line := Page.GetString(LineNr);
