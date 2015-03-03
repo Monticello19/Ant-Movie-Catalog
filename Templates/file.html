@@ -1,0 +1,45 @@
+<html><head>
+<style TYPE="text/css">
+  text,body,p,div,span,th,td,ul,li { FONT-SIZE: 10pt; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; color: black; background: white; }
+  HR { color: black; }
+  A:link { COLOR: #003399; background: white; }
+  A:visited { COLOR: #003399; background: white; }
+  A:hover { COLOR: #CC0000; background: white; }
+  A:active { COLOR: #CC0000; background: white; }
+  td.blk { color: white; background: black; border: solid; border-color: black; }
+  table.blk { color: white; background: black; border: solid; border-color: black; border-width: thin; }
+  img {border:0pt}
+</style>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+</head><body>
+<p>Список создан $$DATE при помощи <a href="http://www.ant.be.tf/moviecatalog/" target="_blank">Ant Movie Catalog</a>.</p>
+
+<a href="film.html" style="font-size:large;">К полному списку...</a>
+<p />
+<table class="blk" border="1" cellspacing="0" cellpadding="5"><tr>
+<td class="blk" nowrap>Год выхода</td>
+<td class="blk" nowrap>Оригинальное название</td>
+<td class="blk" nowrap>Переведенное название</td>
+<td class="blk" nowrap align=center width=70>Размер (Mb)</td>
+<td class="blk" nowrap align=center width=200>кодеки</td>
+</tr><tr>
+<td class="lgt">$$ITEM_YEAR</td>
+<td class="lgt"><strong>$$ITEM_ORIGINALTITLE&nbsp;</strong></td>
+<td class="lgt">$$ITEM_TRANSLATEDTITLE&nbsp;</td>
+<td class="lgt" align=center width=70>$$ITEM_SIZE&nbsp;</td></td>
+<td class="lgt" align=center width=200>$$ITEM_VIDEOFORMAT ($$ITEM_VIDEOBITRATE kbps)<BR>$$ITEM_RESOLUTION ($$ITEM_FRAMERATE fps)<BR>$$ITEM_AUDIOFORMAT ($$ITEM_AUDIOBITRATE kbps)</td></td>
+</tr>
+<tr><td colspan="5" class="blk">Описание (сюжет)</td></tr>
+<tr><td colspan="5">$$ITEM_DESCRIPTION</td></tr></tr>
+
+<tr><td colspan="5" class="blk">Актеры</td></tr>
+<tr><td colspan="5">$$ITEM_ACTORS</td></tr>
+
+<tr><td colspan="5" class="blk">Иллюстрации</td></tr>
+<tr><td colspan="5"><center><a href="$$ITEM_PICTUREFILENAME" border="0">$$ITEM_PICTURE</a></center></td></tr>
+
+<tr><td colspan="5" class="blk">Дополнительно</td></tr>
+<tr><td colspan="5">$$ITEM_COMMENTS</td></tr>
+
+</table>
+</body></html>

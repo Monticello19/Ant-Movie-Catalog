@@ -1,0 +1,32 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<style TYPE="text/css">
+  text,body,p,div,span,th,td,ul,li { FONT-SIZE: 10pt; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; color: black; background: white; }
+  HR { color: black; }
+  A:link { COLOR: #003399; background: white; }
+  A:visited { COLOR: #003399; background: white; }
+  A:hover { COLOR: #CC0000; background: white; }
+  A:active { COLOR: #CC0000; background: white; }
+  td.blk { color: white; background: black; border: solid; border-color: black; }
+  table.blk { color: white; background: black; border: solid; border-color: black; border-width: thin; }
+  table.lgt { color: black; background: white; border: solid; border-width: thin; border-color: #F5F5F5; }
+  td.lgt { color: black; background: white; border: solid; border-width: thin; border-color: #F5F5F5; }
+  p.title { font-size: 18pt; font-weight: bold; }
+</style></head><body>
+<p>Список создан $$DATE при помощи <a href="http://www.ant.be.tf/moviecatalog/" target="_blank">Ant Movie Catalog</a>.</p>
+<p><b>Всего: $$TOTALMOVIES фильмов</b></p>
+<table class="blk" border="1" cellspacing="0" cellpadding="5"><tr>
+<td class="blk" width="20">#</td>
+<td class="blk" width="50%">Оригинальное название</td>
+<td class="blk" width="40%">Переведенное название</td>
+<td class="blk">Жанр</td>
+<td class="blk">Размер (Mb)</td>
+</tr>$$ITEM_BEGIN<tr>
+<td class="lgt"><a href="$$ITEM_FILEINDIV"><b>$$ITEM_NUMBER</b></a></td>
+<td class="lgt"><a href="$$ITEM_FILEINDIV"><b>$$ITEM_ORIGINALTITLE&nbsp;</a></b> (<a href="$$ITEM_URL" title="$$ITEM_URL">url</a>)</td>
+<td class="lgt"><a href="$$ITEM_FILEINDIV">$$ITEM_TRANSLATEDTITLE&nbsp;</a></td>
+<td class="lgt">$$ITEM_CATEGORY&nbsp;</td>
+<td class="lgt">$$ITEM_SIZE&nbsp;</td>
+</tr>$$ITEM_END</table>
+
+<p><b>Всего: $$TOTALMOVIES фильмов</b></p></body></html>
