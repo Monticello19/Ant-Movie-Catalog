@@ -6,6 +6,6 @@
 
 ![file.html](screenshots/file_all(cover).png "file.html")
 
-Пример вывода по шаблону file (индивидуальный шаблон для фильма):
+Пример вывода по шаблону file (индивидуальный шаблон для каждого фильма):
 
 ![file.html](screenshots/file.png "file.html") 
